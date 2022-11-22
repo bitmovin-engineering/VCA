@@ -648,6 +648,12 @@ int main(int argc, char **argv)
 
         logResult(result, processedFrame->getFrame(), resultsCounter);
 
+        if (options.jsonFormat)
+        {
+            nlohmann::json j = result.result;
+            std::cout << j << std::endl;
+        }
+
         resultsCounter++;
     }
 
