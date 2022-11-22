@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.10)
 
 configure_file("${PROJECT_SOURCE_DIR}/source/lib/vca_config.h.in"
                "${PROJECT_BINARY_DIR}/vca_config.h")
