@@ -20,6 +20,7 @@
 
 #include "vcacli.h"
 
+#include <common/ResultToJson.h>
 #include <common/input/Y4MInput.h>
 #include <common/input/YUVInput.h>
 #include <common/stats/YUViewStatsFile.h>
@@ -67,7 +68,7 @@ void printStatus(uint32_t frameNum, unsigned framesToBeAnalyzed, bool printSumma
     prevUpdateTime = now;
 
     auto elapsedAbsMs = std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime)
-                            .count();
+            .count();
     double fps = elapsedAbsMs > 0 ? frameNum * 1000. / elapsedAbsMs : 0;
 
     if (printSummary)
@@ -116,6 +117,8 @@ struct CLIOptions
 
     vca_param vcaParam;
     vca_shot_detection_param shotDetectParam;
+
+    bool jsonFormat{};
 };
 
 struct Result
@@ -180,7 +183,7 @@ std::optional<CLIOptions> parseCLIOptions(int argc, char **argv)
                 if (c != 63)
                     vca_log(LogLevel::Warning,
                             "internal error: short option " + std::string(1, c)
-                                + " has no long option");
+                            + " has no long option");
                 return {};
             }
         }
@@ -201,6 +204,8 @@ std::optional<CLIOptions> parseCLIOptions(int argc, char **argv)
             options.vcaParam.enableChroma = false;
         else if (name == "y4m")
             options.openAsY4m = true;
+        else if (name == "json-format")
+            options.jsonFormat = true;
         else
         {
             auto arg = std::string(optarg);
@@ -288,7 +293,7 @@ bool checkOptions(CLIOptions options)
     {
         vca_log(LogLevel::Error,
                 "Invalid block size (" + std::to_string(options.vcaParam.blockSize)
-                    + ") provided. Valid values are 8, 16 and 32.");
+                + ") provided. Valid values are 8, 16 and 32.");
         return false;
     }
 
@@ -309,6 +314,7 @@ void logOptions(const CLIOptions &options)
     vca_log(LogLevel::Info, "  Complexity csv:    "s + options.complexityCSVFilename);
     vca_log(LogLevel::Info, "  Shot csv:          "s + options.shotCSVFilename);
     vca_log(LogLevel::Info, "  YUView stats file: "s + options.yuviewStatsFilename);
+    vca_log(LogLevel::Info, "  Results as Json:   "s + (options.jsonFormat ? "True"s : "False"s));
 }
 
 void logResult(const Result &result, const vca_frame *frame, const unsigned resultsCounter)
@@ -316,19 +322,19 @@ void logResult(const Result &result, const vca_frame *frame, const unsigned resu
     if (result.result.poc != frame->stats.poc)
         vca_log(LogLevel::Warning,
                 "The poc of the returned data (" + std::to_string(result.result.poc)
-                    + ") does not match the expected next frames POC ("
-                    + std::to_string(frame->stats.poc) + ").");
+                + ") does not match the expected next frames POC ("
+                + std::to_string(frame->stats.poc) + ").");
     if (result.result.poc != resultsCounter)
         vca_log(LogLevel::Warning,
                 "The poc of the returned data (" + std::to_string(result.result.poc)
-                    + ") does not match the expected results counter ("
-                    + std::to_string(resultsCounter) + ").");
+                + ") does not match the expected results counter ("
+                + std::to_string(resultsCounter) + ").");
 
     vca_log(LogLevel::Debug,
             "Got results POC " + std::to_string(result.result.poc) + "averageBrightness "
-                + std::to_string(result.result.averageBrightness) + " averageEnergy "
-                + std::to_string(result.result.averageEnergy) + " sad "
-                + std::to_string(result.result.sad));
+            + std::to_string(result.result.averageBrightness) + " averageEnergy "
+            + std::to_string(result.result.averageEnergy) + " sad "
+            + std::to_string(result.result.sad));
 }
 
 void writeComplexityStatsToFile(const Result &result, std::ofstream &file, bool enableChroma)
@@ -607,6 +613,12 @@ int main(int argc, char **argv)
 
             logResult(result, processedFrame->getFrame(), resultsCounter);
 
+            if (options.jsonFormat)
+            {
+                nlohmann::json j = result.result;
+                std::cout << j << std::endl;
+            }
+
             frameRecycling.push(std::move(processedFrame));
             resultsCounter++;
         }
@@ -642,7 +654,7 @@ int main(int argc, char **argv)
     vca_analyzer_close(analyzer);
     printStatus(resultsCounter, pushedFrames, true);
 
-    if (!options.shotCSVFilename.empty())
+    if (options.shotCSVFilename.empty())
     {
         if (options.shotDetectParam.fps == 0.0)
             options.shotDetectParam.fps = inputFile->getFPS();
@@ -667,7 +679,7 @@ int main(int argc, char **argv)
                                      [](auto frame) { return frame.isNewShot; });
         vca_log(LogLevel::Info,
                 "Performed shot detection for " + std::to_string(shotDetectFrames.size())
-                    + " frames. Detected " + std::to_string(nrShots) + " shots.");
+                + " frames. Detected " + std::to_string(nrShots) + " shots.");
     }
 
     return 0;

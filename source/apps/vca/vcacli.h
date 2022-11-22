@@ -30,6 +30,7 @@ static const struct option long_options[] = {{"help", no_argument, NULL, 'h'},
                                              {"no-chroma", no_argument, NULL, 0},
                                              {"input", required_argument, NULL, 0},
                                              {"y4m", no_argument, NULL, 0},
+                                             {"json-format", no_argument, NULL, 0},
                                              {"input-depth", required_argument, NULL, 0},
                                              {"input-res", required_argument, NULL, 0},
                                              {"input-csp", required_argument, NULL, 0},
@@ -79,6 +80,7 @@ static void showHelp()
     printf("   --yuview-stats <filename>     Write the per block results (energy, sad) to a stats "
            "file\n");
     printf("                                 that can be visualized using YUView.\n");
+    printf("   --json-format                 Print VCA results as Json. Default: Disabled\n");
     printf("\nOperation Options:\n");
     printf("   --no-simd                     Disable SIMD. Default: Enabled\n");
     printf("   --no-chroma                   Disable chroma. Default: Enabled\n");
